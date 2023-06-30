@@ -32,16 +32,19 @@ const getMovies = (req, res) => {
 const getMovieById = (req, res) => {
   const id = parseInt(req.params.id);
 
-  const movie = movies.find((movie) => movie.id === id);
-
-  if (movie != null) {
-    res.json(movie);
-  } else {
-    res.status(404).send("Not Found");
-  }
+  database
+    .query("SELECT * FROM movies WHERE id = ?", [id])
+    .then(([result]) => {
+      if (result) {
+        res.status(200).json(result);
+      } else {
+        res.status(404).json({ error: "Movie not found" });
+      }
+    })
+    .catch((error) => {
+      console.error(error);
+      res.status(500).json({ error: "Internal server error" });
+    });
 };
 
-module.exports = {
-  getMovies,
-  getMovieById,
-};
+module.exports = { getMovieById };
