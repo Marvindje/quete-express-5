@@ -1,52 +1,26 @@
+const express = require("express");
 require("dotenv").config();
 
-const express = require("express");
 const app = express();
-const port = 5000;
 
-const database = require("./database");
+const port = process.env.APP_PORT ?? 5000;
+
+const welcome = (req, res) => {
+  res.send("Welcome to my favourite movie list");
+};
+
+app.get("/", welcome);
+
 const movieHandlers = require("./movieHandlers");
 const userHandlers = require("./userHandlers");
 
-app.use(express.json());
-
-app.get("/api/users", (req, res) => {
- 
-  database
-    .query("SELECT * FROM users")
-    .then((result) => {
-    
-      res.status(200).json(result[0]);
-    })
-    .catch((error) => {
-      
-      res.status(500).json({ error: "Internal Server Error" });
-    });
-});
-
-app.get("/api/users/:id", (req, res) => {
-  const id = parseInt(req.params.id);
-
-  database
-    .query("SELECT * FROM users WHERE id = ?", [id])
-    .then((result) => {
-
-      if (result[0].length > 0) {
-       
-        res.status(200).json(result[0][0]);
-      } else {
-       
-        res.status(404).json({ message: "Not Found" });
-      }
-    })
-    .catch((error) => {
-     
-      res.status(500).json({ error: "Internal Server Error" });
-    });
-});
+app.get("/api/movies", movieHandlers.getMovies);
+app.get("/api/movies/:id", movieHandlers.getMovieById);
+app.get("/api/users", userHandlers.getUsers);
+app.get("/api/users/:id", userHandlers.getUserById);
 
 app.post("/api/movies", movieHandlers.postMovie);
-app.post("/api/users", userHandlers.postUser);
+app.post("/api/users", userHandlers.postUser); // add this line
 
 app.listen(port, (err) => {
   if (err) {
