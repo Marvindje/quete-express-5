@@ -1,21 +1,74 @@
-require('dotenv').config();
-const mysql = require('mysql2/promise');
+const database = require("./database");
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-});
+const getMovies = (req, res) => {
+  database
+    .query("SELECT * FROM movies")
+    .then(([movies]) => {
+      res.json(movies);
+    })
+    .catch((err) => {
+      console.error(err);
+      res.status(500).send("Error retrieving data from database");
+    });
+};
 
-pool.getConnection()
-  .then(() => {
-    console.log('Connected to the database');
-  })
-  .catch((err) => {
-    console.error('Error connecting to the database:', err);
-  });
+const getMovieById = (req, res) => {
+  const id = parseInt(req.params.id);
 
-module.exports = pool;
+  database
+    .query("SELECT * FROM movies WHERE id = ?", [id])
+    .then(([movies]) => {
+      if (movies.length > 0) {
+        res.json(movies[0]);
+      } else {
+        res.status(404).send("Movie not found");
+      }
+    })
+    .catch((err) => {
+      console.error(err);
+      res.status(500).send("Error retrieving movie");
+    });
+};
 
+const postMovie = (req, res) => {
+  const { title, director, year, color, duration } = req.body;
+
+  database
+    .query(
+      "INSERT INTO movies(title, director, year, color, duration) VALUES (?, ?, ?, ?, ?)",
+      [title, director, year, color, duration]
+    )
+    .then(([result]) => {
+      res.location(`/api/movies/${result.insertId}`);
+      res.sendStatus(201);
+    })
+    .catch((err) => {
+      console.error(err);
+      res.status(500).send("Error saving the movie");
+    });
+};
+
+const deleteMovie = (req, res) => {
+  const id = parseInt(req.params.id);
+
+  database
+    .query("delete from movies where id = ?", [id])
+    .then(([result]) => {
+      if (result.affectedRows === 0) {
+        res.status(404).send("Not Found");
+      } else {
+        res.sendStatus(204);
+      }
+    })
+    .catch((err) => {
+      console.error(err);
+      res.status(500).send("Error deleting the movie");
+    });
+};
+
+module.exports = {
+  getMovies,
+  getMovieById,
+  postMovie,
+  deleteMovie, // don't forget to export your function ;)
+};
